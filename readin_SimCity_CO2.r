@@ -21,10 +21,10 @@ obsdir <- "/uufs/chpc.utah.edu/common/home/lin-group9/measurements/data/"
 sites.all <- c("CSP","DBK","FRU","HDP","HEB","HPL","IMC","LGN","LG2","ROO","RPK","SUG","SUN","WBB")
 sites <- sites.all
 calraws <- c("cal","raw")[1]  #can be either "cal" (calibrated) or "raw"
-YEARs <- c(2015,2016,2017,2018,2019,2020,2021,2022)[8]
+YEARs <- c(2015,2016,2017,2018,2019,2020,2021,2022)[-1]
 #tracer <- "co2"  
 tracer <- "ch4"
-readinTF <- TRUE  #reads in dataset and save as RDS files?
+readinTF <- FALSE #reads in dataset and save as RDS files?
 aveTF <- TRUE     #create HOURLY datasets by averaging 10-sec data?
 ##########################
 
@@ -34,7 +34,8 @@ tracer <- casefold(tracer,upper=TRUE)
 tmp <- c("CSP","lgr_ugga","DBK","licor_6262","DBK","licor_7000","FRU","lgr_ugga","HDP","lgr_ugga","HEB","licor_6262","HPL","lgr_ugga","IMC","licor_6262","LGN","licor_6262","LG2","licor_6262","ROO","lgr_ugga","RPK","licor_6262","SUG","licor_6262","SUG","licor_7000","SUN","licor_6262","WBB","lgr_ugga")
 tmp2 <- matrix(tmp,byrow=T,ncol=2)
 instrm.matrix <- tmp2
-instrm.sites <- tmp2[,2];names(instrm.sites) <- tmp2[,1]
+instrm.sites <- instrm.matrix[instrm.matrix[,1]%in%sites,2]
+names(instrm.sites) <- instrm.matrix[instrm.matrix[,1]%in%sites,1]
 prevSite <- ""
 
 for(yy in 1:length(YEARs)){
@@ -43,9 +44,10 @@ for(yy in 1:length(YEARs)){
 
 #Reads in entire dataset and saves as .rds output files
 if(readinTF){
-for(i in 1:nrow(instrm.matrix)){
-  site <- instrm.matrix[i]
-  sitenm <- site;substring(sitenm,1,1)<-toupper(substring(sitenm,1,1))
+#for(i in 1:nrow(instrm.matrix)){
+for(i in 1:length(instrm.sites)){
+  site <- names(instrm.sites)[i]
+  sitenm <- site;substring(sitenm,1,1) <- toupper(substring(sitenm,1,1))
   print(paste("*********** Site:",sitenm," *************"))
 
   obsdir2 <- paste(obsdir,"/",tolower(site),"/",instrm.sites[i],"/calibrated/",sep="")
