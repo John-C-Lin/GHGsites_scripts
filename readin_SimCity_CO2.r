@@ -21,10 +21,10 @@ obsdir <- "/uufs/chpc.utah.edu/common/home/lin-group9/measurements/data/"
 sites.all <- c("CSP","DBK","FRU","HDP","HEB","HPL","IMC","LGN","LG2","ROO","RPK","SUG","SUN","WBB")
 sites <- sites.all
 calraws <- c("cal","raw")[1]  #can be either "cal" (calibrated) or "raw"
-YEARs <- c(2015,2016,2017,2018,2019,2020,2021,2022)[-1]
-#tracer <- "co2"  
-tracer <- "ch4"
-readinTF <- FALSE #reads in dataset and save as RDS files?
+YEARs <- c(2015,2016,2017,2018,2019,2020,2021,2022)
+tracer <- "co2"  
+#tracer <- "ch4"
+readinTF <- TRUE #reads in dataset and save as RDS files?
 aveTF <- TRUE     #create HOURLY datasets by averaging 10-sec data?
 ##########################
 
@@ -91,24 +91,10 @@ for(i in 1:length(sites)){
   if(length(grep(tracer,colnames(tmp)))==0){print(paste("No",tracer,"data for",site,";  skipping!"));next}
 
   # assign NA for data under calibration sequence or those that don't pass QA/QC metrics
-  isNA <- is.na(tmp[,paste0("ID_",tracer)])|is.na(tmp$QAQC_Flag)
-  sel <- tmp[,paste0("ID_",tracer)]!=(-10)   # ID_CO2 == -10 means that measuring ambient atmosphere; so remove if not indicating ambient atmosphere
-  #V5 data processing not perfect, so also need to include QAQC_Flag = (-6), which is "Time elapsed between reference tank measurements out of range”
-  # sel <- sel | ((tmp$QAQC_Flag!=0) & tmp$QAQC_Flag!=(-6))
-  #V6 just remove all data with QAQC_Flag < 0
-  sel <- sel | (tmp$QAQC_Flag < 0)
-  tmp[sel&!isNA,paste0(tracer,c("d_ppm_cal","d_ppm_raw"))] <- NA
+  # just remove all data with QAQC_Flag < 0; includes problematic data and those measuring reference tanks (QAQC_Flag = -9)
+  sel <- tmp$QAQC_Flag < 0
+  tmp[sel,paste0(tracer,c("d_ppm_cal","d_ppm_raw"))] <- NA
 
-  # > colnames(getr("University_CO2_2016"))
-  # [1] "Time"         "CO2d_ppm_raw" "CO2d_ppm_cal" "CH4d_ppm_raw" "CH4d_ppm_cal"
-  # [6] "n_co2"        "n_ch4"       
-  #if(sitenm=="University"){
-    #follow same column names as the SimCity CO2 sites (instead of the columns in "LGR_network")
-  #  colnms<-colnames(tmp)
-  #  colnms[colnms=="CO2d_ppm_raw"]<-"raw"
-  #  colnms[colnms=="CO2d_ppm_cal"]<-"corrected"
-  #  colnames(tmp)<-colnms
-  #} #if(sitenm=="University"){
   Time.all <- as.POSIXct(tmp[,"Time"],tz="GMT")
   YYYYMMDDHH <- format(Time.all,tz="GMT",format="%Y%m%d%H")
   #average 10-sec data to HOURLY
