@@ -1,10 +1,4 @@
 #Reads in SimCity CO2 time series datasets and saves them as .RData files
-#(151006): Implement reading in of RDS data files, and use UTC timezone as default
-#V2(160319): Also read in UofU site (archived under "LGR_network")
-#V3(160517): New data path, and 3 letter codes (consistent among all U-ATAQ sites)
-#V4(170419): Based new version on "readin_SimCity_CO2V4.r"
-#V6(210407): Added LG2 site, use new QAQC_Flag filtering method--i.e., remove all data with *negative* flags
-#V7(220906): Save data as RDS files, instead of .RData* files
 #May 19th, 2015 by John C. Lin (John.Lin@utah.edu)
 
 #From Ben Fasoli (151006):
@@ -17,14 +11,14 @@
 #attributes(data$Time)$tzone <- 'UTC
 
 ##########################
-obsdir <- "/uufs/chpc.utah.edu/common/home/lin-group9/measurements/data/"
+obsdir <- "/uufs/chpc.utah.edu/common/home/lin-group20/measurements/data/"
 sites.all <- c("CSP","DBK","FRU","HDP","HEB","HPL","IMC","LGN","LG2","ROO","RPK","SUG","SUN","WBB")
 sites <- sites.all
 calraws <- c("cal","raw")[1]  #can be either "cal" (calibrated) or "raw"
-YEARs <- c(2015,2016,2017,2018,2019,2020,2021,2022)
+YEARs <- c(2015,2016,2017,2018,2019,2020,2021,2022,2023)
 tracer <- "co2"  
 #tracer <- "ch4"
-readinTF <- TRUE #reads in dataset and save as RDS files?
+readinTF <- TRUE  #reads in dataset and save as RDS files?
 aveTF <- TRUE     #create HOURLY datasets by averaging 10-sec data?
 ##########################
 
@@ -50,7 +44,8 @@ for(i in 1:length(instrm.sites)){
   sitenm <- site;substring(sitenm,1,1) <- toupper(substring(sitenm,1,1))
   print(paste("*********** Site:",sitenm," *************"))
 
-  obsdir2 <- paste(obsdir,"/",tolower(site),"/",instrm.sites[i],"/calibrated/",sep="")
+  #obsdir2 <- paste(obsdir,"/",tolower(site),"/",instrm.sites[i],"/calibrated/",sep="")
+  obsdir2 <- paste(obsdir,"/",tolower(site),"/",instrm.sites[i],"/final/",sep="")  # 240520: new data pipeline has "final" directory that simplifies application of QAQC flag
   filenms <- list.files(path=obsdir2,pattern="dat")
   filenms <- filenms[grep(YEAR,filenms)]
   if(length(filenms)==0){print(paste("No data for",site,";  skipping!"));next}
@@ -62,16 +57,15 @@ for(ff in 1:length(filenms)){
   gc()
 } #for(ff in 1:length(filenms)){
   if(prevSite == site) {
-	  result <- rbind(prevResult, result)}
+	result <- rbind(prevResult, result)}
   prevResult <- result  
-  attributes(result$Time)$tzone <- "UTC"  #change to UTC (if not already)
+  attributes(result$Time_UTC)$tzone <- "UTC"  #change to UTC (if not already)
   resultname <- paste(sitenm,"_GHG_",YEAR,sep="")
   # assignr(resultname,result,printTF=TRUE)
   saveRDS(result,paste0(resultname,".rds"));print(paste0(resultname,".rds written out"))
   prevSite <- site
 } #for(i in 1:nrow(instrm.matrix)){
 } #if(readinTF){
-
 
 #Create HOURLY datasets by averaging 10-sec data
 if(aveTF){
@@ -90,12 +84,13 @@ for(i in 1:length(sites)){
 
   if(length(grep(tracer,colnames(tmp)))==0){print(paste("No",tracer,"data for",site,";  skipping!"));next}
 
+  #240520:  No need to implement QAQC flag for new data pipeline if read from "final" folder above!
   # assign NA for data under calibration sequence or those that don't pass QA/QC metrics
   # just remove all data with QAQC_Flag < 0; includes problematic data and those measuring reference tanks (QAQC_Flag = -9)
-  sel <- tmp$QAQC_Flag < 0
-  tmp[sel,paste0(tracer,c("d_ppm_cal","d_ppm_raw"))] <- NA
+  #sel <- tmp$QAQC_Flag < 0
+  #tmp[sel,paste0(tracer,c("d_ppm_cal","d_ppm_raw"))] <- NA
 
-  Time.all <- as.POSIXct(tmp[,"Time"],tz="GMT")
+  Time.all <- as.POSIXct(tmp[,"Time_UTC"],tz="GMT")
   YYYYMMDDHH <- format(Time.all,tz="GMT",format="%Y%m%d%H")
   #average 10-sec data to HOURLY
   #if(calraw=="cal")GHG <- tapply(tmp[,paste0(tracer,"d_ppm_cal")],YYYYMMDDHH,mean)  #NA if even 1 timepoint is NA
