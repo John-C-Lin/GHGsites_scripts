@@ -25,7 +25,8 @@ aveTF <- TRUE     #create HOURLY datasets by averaging 10-sec data?
 tracer <- casefold(tracer,upper=TRUE)
 
 #look up table of different instruments used at various sites
-tmp <- c("CSP","lgr_ugga","DBK","licor_6262","DBK","licor_7000","FRU","lgr_ugga","HDP","lgr_ugga","HEB","licor_6262","HPL","lgr_ugga","IMC","licor_6262","LGN","licor_6262","LG2","licor_6262","ROO","lgr_ugga","RPK","licor_6262","SUG","licor_6262","SUG","licor_7000","SUN","licor_6262","WBB","lgr_ugga")
+tmp <- c("CSP","lgr_ugga","DBK","licor_6262","DBK","licor_7000","FRU","lgr_ugga","HDP","lgr_ugga","HEB","licor_6262","HPL","lgr_ugga",
+         "IMC","licor_6262","LGN","licor_6262","LG2","licor_6262","ROO","lgr_ugga","RPK","licor_6262","RPK","licor_7000","SUG","licor_6262","SUG","licor_7000","SUN","licor_6262","WBB","lgr_ugga")
 tmp2 <- matrix(tmp,byrow=T,ncol=2)
 instrm.matrix <- tmp2
 instrm.sites <- instrm.matrix[instrm.matrix[,1]%in%sites,2]
@@ -56,12 +57,11 @@ for(ff in 1:length(filenms)){
   result <- rbind(result,tmp)
   gc()
 } #for(ff in 1:length(filenms)){
-  if(prevSite == site) {
-	result <- rbind(prevResult, result)}
+  if(prevSite == site) result <- rbind(prevResult, result) # if same site measured by multiple instruments
+  result <- result[order(result$Time_UTC),]
   prevResult <- result  
   attributes(result$Time_UTC)$tzone <- "UTC"  #change to UTC (if not already)
   resultname <- paste(sitenm,"_GHG_",YEAR,sep="")
-  # assignr(resultname,result,printTF=TRUE)
   saveRDS(result,paste0(resultname,".rds"));print(paste0(resultname,".rds written out"))
   prevSite <- site
 } #for(i in 1:nrow(instrm.matrix)){
